@@ -1,0 +1,53 @@
+resource_types:
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+    tag: latest
+
+resources:
+- name: slack-alert
+  type: slack-notification
+  icon: slack
+  source:
+    url: ((slack_webhook))
+
+jobs:
+- name: test
+  plan:
+  - task: success
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: busybox }
+      run:
+        path: /bin/sh
+        args:
+        - -xeuc
+        - |
+          echo "Ahoy!"
+    on_success:
+      put: slack-alert
+      params:
+        channel: "#smb-wh-testing"
+        text: |
+          This is a success message!
+  - task: failure
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: busybox }
+      run:
+        path: /bin/sh
+        args:
+        - -xeuc
+        - |
+          exit 1
+    on_failure:
+      put: slack-alert
+      params:
+        channel: "#smb-wh-testing"
+        text: |
+          This is a failure message!
